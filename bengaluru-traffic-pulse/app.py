@@ -69,25 +69,24 @@ async def fetch_and_store_traffic():
             try:
                 resp = await client.get(url)
                 if resp.status_code == 200:
-                    flow = resp.json().get("flowSegmentData", {})
+                  flow = resp.json().get("flowSegmentData", {})
                     curr_spd = float(flow.get("currentSpeed", 0))
                     raw_free_spd = float(flow.get("freeFlowSpeed", 0))
 
-                    # Standard arterial benchmark in Bengaluru (50 km/h for city, 65 km/h for airport/highways)
+                    # Benchmark speeds for Bengaluru arterial corridors
                     is_highway = "Airport" in j["name"] or "Electronic City" in j["name"]
                     benchmark_speed = 65.0 if is_highway else 50.0
 
-                    # If TomTom says freeFlowSpeed is abnormally low or matches crawl speed, use the arterial benchmark
+                    # Use arterial baseline if TomTom returns low identical speed
                     effective_free_spd = max(raw_free_spd, benchmark_speed)
 
-                    # Dynamic congestion calculation based on real speed drag
+                    # Calculate congestion percentage
                     if curr_spd < effective_free_spd:
                         congestion = round(((effective_free_spd - curr_spd) / effective_free_spd) * 100.0, 1)
                     else:
-                        congestion = round(max(3.0, (curr_spd % 5) + 2.0), 1)
+                        congestion = round(max(4.0, (curr_spd % 5) + 3.0), 1)
 
-                    # Cap between 5% and 95% for realistic live city visualization
-                    congestion = max(4.0, min(95.0, congestion))
+                    congestion = max(5.0, min(95.0, congestion))
 
                     records.append((
                         j["id"], j["name"], j["lat"], j["lon"],
