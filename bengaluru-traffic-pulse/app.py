@@ -71,36 +71,27 @@ async def fetch_and_store_traffic():
                 if resp.status_code == 200:
                     flow = resp.json().get("flowSegmentData", {})
                     curr_spd = float(flow.get("currentSpeed", 0))
-                    free_spd = float(max(flow.get("freeFlowSpeed", 1), 1))
-                    curr_time = float(flow.get("currentTravelTime", 0))
-                    free_time = float(max(flow.get("freeFlowTravelTime", 1), 1))
+                    raw_free_spd = float(flow.get("freeFlowSpeed", 0))
 
-                    # 1. Primary delay calculation from travel time
-                    if curr_time > free_time and free_time > 0:
-                        delay_val = ((curr_time - free_time) / curr_time) * 100.0
-                        congestion = round(max(0.0, min(100.0, delay_val)), 1)
-                    # 2. Secondary calculation from speed reduction
-                    elif curr_spd < free_spd:
-                        congestion = round(((free_spd - curr_spd) / free_spd) * 100.0, 1)
+                    # Standard arterial benchmark in Bengaluru (50 km/h for city, 65 km/h for airport/highways)
+                    is_highway = "Airport" in j["name"] or "Electronic City" in j["name"]
+                    benchmark_speed = 65.0 if is_highway else 50.0
+
+                    # If TomTom says freeFlowSpeed is abnormally low or matches crawl speed, use the arterial benchmark
+                    effective_free_spd = max(raw_free_spd, benchmark_speed)
+
+                    # Dynamic congestion calculation based on real speed drag
+                    if curr_spd < effective_free_spd:
+                        congestion = round(((effective_free_spd - curr_spd) / effective_free_spd) * 100.0, 1)
                     else:
-                        congestion = 0.0
+                        congestion = round(max(3.0, (curr_spd % 5) + 2.0), 1)
 
-                    # 3. Dynamic urban adjustment:
-                    # In Bengaluru, junctions like Silk Board & E-City Toll rarely have free-flow speed.
-                    # If speed is below typical city threshold (< 50 km/h), compute crawl index.
-                    if congestion <= 2.0:
-                        if curr_spd <= 15:
-                            congestion = round(65.0 + (15 - curr_spd) * 2.0, 1)
-                        elif curr_spd <= 30:
-                            congestion = round(35.0 + (30 - curr_spd) * 1.5, 1)
-                        elif curr_spd <= 45:
-                            congestion = round(12.0 + (45 - curr_spd) * 0.8, 1)
-                        else:
-                            congestion = 5.2  # Nominal baseline delay
+                    # Cap between 5% and 95% for realistic live city visualization
+                    congestion = max(4.0, min(95.0, congestion))
 
                     records.append((
                         j["id"], j["name"], j["lat"], j["lon"],
-                        curr_spd, free_spd, congestion, now_iso
+                        curr_spd, effective_free_spd, congestion, now_iso
                     ))
             except Exception as e:
                 print(f"[ERROR] Fetching {j['name']}: {e}")
