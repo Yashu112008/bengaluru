@@ -137,6 +137,7 @@ async def get_latest_traffic():
             INNER JOIN (
                 SELECT junction_id, MAX(id) as max_id
                 FROM traffic_history
+                WHERE congestion_pct > 0.0
                 GROUP BY junction_id
             ) latest ON t.id = latest.max_id
             ORDER BY congestion_pct DESC
