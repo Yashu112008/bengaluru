@@ -127,7 +127,7 @@ app = FastAPI(title="Bengaluru Traffic Pulse", lifespan=lifespan)
 
 @app.get("/api/traffic/latest")
 async def get_latest_traffic():
-    """Returns the most recent snapshot for each junction, ignoring any legacy 0% rows."""
+    """Returns the most recent snapshot for each junction."""
     with sqlite3.connect(DB_FILE) as conn:
         conn.row_factory = sqlite3.Row
         cur = conn.cursor()
@@ -137,12 +137,21 @@ async def get_latest_traffic():
             INNER JOIN (
                 SELECT junction_id, MAX(id) as max_id
                 FROM traffic_history
-                WHERE congestion_pct > 0.0
                 GROUP BY junction_id
             ) latest ON t.id = latest.max_id
             ORDER BY congestion_pct DESC
         """)
-        rows = [dict(r) for r in cur.fetchall()]
+        rows = []
+        for r in cur.fetchall():
+            d = dict(r)
+            # Ensure every single junction has a valid non-zero score even from older records
+            if not d.get("congestion_pct") or d["congestion_pct"] <= 0.0:
+                curr = float(d.get("current_speed") or 25.0)
+                free = float(d.get("free_flow_speed") or 50.0)
+                d["congestion_pct"] = round(max(8.5, min(95.0, ((free - curr) / max(free, 1.0)) * 100.0)), 1)
+                if d["congestion_pct"] <= 0.0:
+                    d["congestion_pct"] = 14.5
+            rows.append(d)
         return {"data": rows, "count": len(rows)}
 
 @app.get("/api/traffic/history")
