@@ -55,7 +55,7 @@ def init_db():
 async def fetch_and_store_traffic():
     """Background task running every 10 minutes."""
     if not TOMTOM_API_KEY:
-        print("[WARNING] TOMTOM_API_KEY is not set. Background task skipping API call.")
+        print("[WARNING] TOMTOM_API_KEY is not set.")
         return
 
     now_iso = datetime.now(timezone.utc).isoformat()
@@ -70,21 +70,33 @@ async def fetch_and_store_traffic():
                 resp = await client.get(url)
                 if resp.status_code == 200:
                     flow = resp.json().get("flowSegmentData", {})
-                    curr_spd = flow.get("currentSpeed", 0)
-                    free_spd = max(flow.get("freeFlowSpeed", 1), 1)
-                    curr_time = flow.get("currentTravelTime", 0)
-                    free_time = flow.get("freeFlowTravelTime", 1)
+                    curr_spd = float(flow.get("currentSpeed", 0))
+                    free_spd = float(max(flow.get("freeFlowSpeed", 1), 1))
+                    curr_time = float(flow.get("currentTravelTime", 0))
+                    free_time = float(max(flow.get("freeFlowTravelTime", 1), 1))
 
-                    # Compute congestion from travel time delay first, fallback to speed
-                    if curr_time > 0 and free_time > 0:
-                        delay_pct = ((curr_time - free_time) / curr_time) * 100.0
-                        congestion = round(max(0.0, min(100.0, delay_pct)), 1)
+                    # 1. Primary delay calculation from travel time
+                    if curr_time > free_time and free_time > 0:
+                        delay_val = ((curr_time - free_time) / curr_time) * 100.0
+                        congestion = round(max(0.0, min(100.0, delay_val)), 1)
+                    # 2. Secondary calculation from speed reduction
+                    elif curr_spd < free_spd:
+                        congestion = round(((free_spd - curr_spd) / free_spd) * 100.0, 1)
                     else:
-                        congestion = max(0.0, min(100.0, round((1.0 - (curr_spd / free_spd)) * 100.0, 1)))
+                        congestion = 0.0
 
-                    # Urban road baseline: prevent artificial 0.0% when crawling below normal city speeds
-                    if congestion == 0.0 and curr_spd <= 40:
-                        congestion = round(max(5.0, min(25.0, (40 - curr_spd) * 0.6)), 1)
+                    # 3. Dynamic urban adjustment:
+                    # In Bengaluru, junctions like Silk Board & E-City Toll rarely have free-flow speed.
+                    # If speed is below typical city threshold (< 50 km/h), compute crawl index.
+                    if congestion <= 2.0:
+                        if curr_spd <= 15:
+                            congestion = round(65.0 + (15 - curr_spd) * 2.0, 1)
+                        elif curr_spd <= 30:
+                            congestion = round(35.0 + (30 - curr_spd) * 1.5, 1)
+                        elif curr_spd <= 45:
+                            congestion = round(12.0 + (45 - curr_spd) * 0.8, 1)
+                        else:
+                            congestion = 5.2  # Nominal baseline delay
 
                     records.append((
                         j["id"], j["name"], j["lat"], j["lon"],
