@@ -12,24 +12,24 @@ TOMTOM_API_KEY = os.getenv("TOMTOM_API_KEY", "GQQ3TmhgkWNpEPVfcKuz5JXBHnGGBt3z")
 
 # 16 High-Traffic Bengaluru Hotspots (Old + New Corridors)
 JUNCTIONS = [
-    # Requested New Locations
-    {"id": "bagalur_cross", "name": "Bagalur Cross (Airport Rd / Yelahanka)", "lat": 13.1362, "lon": 77.6094},
-    {"id": "mg_road", "name": "MG Road (Anil Kumble Circle)", "lat": 12.9756, "lon": 77.6066},
+    # Refined exact carriageway coordinates
+    {"id": "silk_board", "name": "Silk Board Junction", "lat": 12.9172, "lon": 77.6228},
+    {"id": "sony_world", "name": "Sony World Signal Koramangala", "lat": 12.9348, "lon": 77.6258},
+    {"id": "outer_ring_road", "name": "Outer Ring Road (Bellandur Ecospace)", "lat": 12.9268, "lon": 77.6785},
+    {"id": "ecity", "name": "Electronic City Toll Gate (Hosur Rd)", "lat": 12.8495, "lon": 77.6582},
+    {"id": "goraguntepalya", "name": "Goraguntepalya Signal (Tumkur Rd)", "lat": 13.0289, "lon": 77.5412},
+    {"id": "bagalur_cross", "name": "Bagalur Cross (Airport Rd)", "lat": 13.1340, "lon": 77.6105},
+    
+    # Other junctions
     {"id": "kr_puram_bridge", "name": "KR Puram Hanging Bridge & Junction", "lat": 13.0016, "lon": 77.6631},
+    {"id": "mg_road", "name": "MG Road (Anil Kumble Circle)", "lat": 12.9756, "lon": 77.6066},
     {"id": "mekhri_circle", "name": "Mekhri Circle Underpass", "lat": 13.0078, "lon": 77.5815},
-    {"id": "outer_ring_road", "name": "Outer Ring Road (Bellandur / Ecospace)", "lat": 12.9260, "lon": 77.6762},
     {"id": "yeshwanthpur", "name": "Yeshwanthpur Junction / Flyover", "lat": 13.0238, "lon": 77.5503},
     {"id": "bel_circle", "name": "BEL Circle (Jalahalli)", "lat": 13.0422, "lon": 77.5501},
     {"id": "hennur_cross", "name": "Hennur Cross (ORR Junction)", "lat": 13.0232, "lon": 77.6397},
-
-    # Previous Core Choke Points
-    {"id": "silk_board", "name": "Silk Board Junction", "lat": 12.9177, "lon": 77.6238},
     {"id": "marathahalli", "name": "Marathahalli Bridge (ORR)", "lat": 12.9562, "lon": 77.7019},
     {"id": "tin_factory", "name": "Tin Factory (Old Madras Rd)", "lat": 13.0010, "lon": 77.6625},
     {"id": "hebbal", "name": "Hebbal Flyover (Airport Rd)", "lat": 13.0354, "lon": 77.5988},
-    {"id": "sony_world", "name": "Sony World Signal Koramangala", "lat": 12.9352, "lon": 77.6245},
-    {"id": "ecity", "name": "Electronic City Toll Gate", "lat": 12.8452, "lon": 77.6602},
-    {"id": "goraguntepalya", "name": "Goraguntepalya Signal", "lat": 13.0285, "lon": 77.5408},
     {"id": "whitefield_hope_farm", "name": "Hope Farm Whitefield", "lat": 12.9840, "lon": 77.7516},
 ]
 
