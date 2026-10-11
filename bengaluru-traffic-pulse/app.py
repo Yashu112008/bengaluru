@@ -72,9 +72,20 @@ async def fetch_and_store_traffic():
                     flow = resp.json().get("flowSegmentData", {})
                     curr_spd = flow.get("currentSpeed", 0)
                     free_spd = max(flow.get("freeFlowSpeed", 1), 1)
-                    
-                    # Calculate congestion percentage
-                    congestion = max(0.0, min(100.0, round((1.0 - (curr_spd / free_spd)) * 100.0, 1)))
+                    curr_time = flow.get("currentTravelTime", 0)
+                    free_time = flow.get("freeFlowTravelTime", 1)
+
+                    # Compute congestion from travel time delay first, fallback to speed
+                    if curr_time > 0 and free_time > 0:
+                        delay_pct = ((curr_time - free_time) / curr_time) * 100.0
+                        congestion = round(max(0.0, min(100.0, delay_pct)), 1)
+                    else:
+                        congestion = max(0.0, min(100.0, round((1.0 - (curr_spd / free_spd)) * 100.0, 1)))
+
+                    # Urban road baseline: prevent artificial 0.0% when crawling below normal city speeds
+                    if congestion == 0.0 and curr_spd <= 40:
+                        congestion = round(max(5.0, min(25.0, (40 - curr_spd) * 0.6)), 1)
+
                     records.append((
                         j["id"], j["name"], j["lat"], j["lon"],
                         curr_spd, free_spd, congestion, now_iso
